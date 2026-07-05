@@ -1,52 +1,59 @@
-import Image from "next/image";
+import Link from "next/link";
+import { GAMES } from "@/lib/constants";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-bg font-sans">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-surface rounded-card sm:items-start">
-        <Image src="/next.svg" alt="Next.js logo" width={100} height={20} priority />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-text">
-            To get started, edit the page.tsx file.
+    <div className="flex flex-1 flex-col items-center px-6 py-16 sm:py-20">
+      <div className="flex w-full max-w-md flex-col gap-10">
+        <header className="flex flex-col items-center gap-2 text-center">
+          <h1 className="text-4xl font-bold tracking-tight text-text">
+            Sidebar
           </h1>
-          <p className="max-w-md text-lg leading-8 text-text-light">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-text"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-text"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+          <p className="text-text-light">train your brain, no stress</p>
+        </header>
+
+        <div className="grid grid-cols-2 gap-4">
+          {GAMES.map((game) => {
+            const cardBody = (
+              <>
+                <span className="text-5xl">{game.emoji}</span>
+                <h2 className="text-base font-semibold text-text">
+                  {game.name}
+                </h2>
+                <p className="text-sm leading-snug text-text-light">
+                  {game.description}
+                </p>
+                {!game.available && (
+                  <span className="mt-1 text-xs font-medium text-text-light">
+                    Coming soon 🌱
+                  </span>
+                )}
+              </>
+            );
+
+            if (game.available) {
+              return (
+                <Link
+                  key={game.id}
+                  href={game.href}
+                  className="flex flex-col items-center gap-1.5 rounded-card bg-surface p-5 text-center shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
+                >
+                  {cardBody}
+                </Link>
+              );
+            }
+
+            return (
+              <div
+                key={game.id}
+                className="flex cursor-default flex-col items-center gap-1.5 rounded-card bg-surface p-5 text-center opacity-50 shadow-sm"
+              >
+                {cardBody}
+              </div>
+            );
+          })}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-button bg-primary px-5 text-surface transition-colors hover:opacity-90 md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image src="/vercel.svg" alt="Vercel logomark" width={16} height={16} />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-button border border-solid border-text-light/20 px-5 text-text transition-colors hover:bg-bg md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
