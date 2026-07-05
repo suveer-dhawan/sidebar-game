@@ -5,8 +5,19 @@ import type { CSSProperties } from "react";
 import { Fraunces } from "next/font/google";
 import { BackButton } from "@/components/layout/BackButton";
 import { Plant } from "@/components/garden/Plant";
+import { GardenView } from "@/components/garden/GardenView";
 import { SOIL_PALETTE, darken, lighten } from "@/components/garden/colour";
 import { generatePuzzle, type Cell, type Puzzle, type PuzzleOption, type Tier } from "@/lib/pattern-engine";
+import { getStoredValue, setStoredValue } from "@/lib/storage";
+import {
+  DEFAULT_PATTERN_GARDEN_STATE,
+  PATTERN_GARDEN_KEY,
+  recordCorrectAnswer,
+  recordWrongAnswer,
+  sanitizeGardenState,
+  tierNumberFor,
+  type PatternGardenState,
+} from "@/lib/pattern-garden-storage";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -14,7 +25,6 @@ const fraunces = Fraunces({
   weight: ["500", "600"],
 });
 
-const TIER: Tier = 2;
 const FLIGHT_MS = 560;
 const HOLD_CORRECT_MS = 850;
 const HOLD_WRONG_MS = 1500;
@@ -192,15 +202,27 @@ export default function PatternGamePage() {
   const [lastOutcome, setLastOutcome] = useState<"correct" | "wrong" | null>(null);
   const [ledge, setLedge] = useState<LedgeFlower[]>([]);
   const [flight, setFlight] = useState<FlightState | null>(null);
+  const [garden, setGarden] = useState<PatternGardenState>(DEFAULT_PATTERN_GARDEN_STATE);
+  const [isGardenOpen, setIsGardenOpen] = useState(false);
 
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const optionRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const plotRef = useRef<HTMLDivElement | null>(null);
   const ledgeScrollRef = useRef<HTMLDivElement | null>(null);
+  // Mirrors `garden` synchronously so scheduled callbacks (loadNext, fired
+  // via setTimeout) always read the just-recorded answer instead of a stale
+  // pre-setState closure.
+  const gardenRef = useRef<PatternGardenState>(DEFAULT_PATTERN_GARDEN_STATE);
 
   const schedule = (fn: () => void, ms: number) => {
     timers.current.push(setTimeout(fn, ms));
   };
+
+  function persistGarden(next: PatternGardenState) {
+    gardenRef.current = next;
+    setGarden(next);
+    setStoredValue(PATTERN_GARDEN_KEY, next);
+  }
 
   useEffect(() => {
     const pending = timers.current;
@@ -210,11 +232,15 @@ export default function PatternGamePage() {
   }, []);
 
   // Puzzle generation is random, so it must only happen client-side, or the
-  // server-rendered and hydrated markup would diverge. One-time init, not a
-  // state sync, so it intentionally runs once.
+  // server-rendered and hydrated markup would diverge. Loading the saved
+  // garden happens in the same one-time effect so the very first puzzle
+  // already reflects her saved difficulty, not a default.
   useEffect(() => {
+    const loaded = sanitizeGardenState(getStoredValue<unknown>(PATTERN_GARDEN_KEY, null));
+    gardenRef.current = loaded;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPuzzle(generateCompactPuzzle(TIER));
+    setGarden(loaded);
+    setPuzzle(generateCompactPuzzle(tierNumberFor(loaded.currentDifficulty)));
   }, []);
 
   useEffect(() => {
@@ -223,7 +249,7 @@ export default function PatternGamePage() {
   }, [ledge.length]);
 
   function loadNext() {
-    setPuzzle(generateCompactPuzzle(TIER));
+    setPuzzle(generateCompactPuzzle(tierNumberFor(gardenRef.current.currentDifficulty)));
     setSelectedId(null);
     setPlotFilled(false);
     setLastOutcome(null);
@@ -263,11 +289,13 @@ export default function PatternGamePage() {
         setPhase("correct");
         setLastOutcome("correct");
         setLedge((prev) => [...prev, { key: `${puzzle.id}-${option.id}`, cell: option.cell }]);
+        persistGarden(recordCorrectAnswer(gardenRef.current, option.cell));
         schedule(startLeaving, HOLD_CORRECT_MS);
       }, FLIGHT_MS);
     } else {
       setPhase("wrong");
       setLastOutcome("wrong");
+      persistGarden(recordWrongAnswer(gardenRef.current));
       schedule(startLeaving, HOLD_WRONG_MS);
     }
   }
@@ -325,14 +353,38 @@ export default function PatternGamePage() {
           className="shrink-0"
           style={{ paddingTop: "max(0.9rem, env(safe-area-inset-top))" }}
         >
-          <header className="flex w-full items-center justify-between">
+          <header className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2">
             <BackButton />
             <h1
-              className="text-sm text-text/70"
+              className="text-center text-sm text-text/70"
               style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 600 }}
             >
               Pattern Garden
             </h1>
+            <button
+              type="button"
+              onClick={() => setIsGardenOpen(true)}
+              aria-label="Open your garden"
+              className="flex h-8 w-8 items-center justify-center justify-self-end rounded-full transition-transform active:scale-95"
+              style={{ background: "rgba(255,255,255,0.55)" }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4.5" fill="var(--color-primary)" opacity={0.85} />
+                <path
+                  d="M12 12.2 V21"
+                  stroke="var(--color-secondary)"
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M12 17.5 Q7.5 17.5 6 21"
+                  stroke="var(--color-secondary)"
+                  strokeWidth={1.8}
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
           </header>
 
           <div
@@ -506,6 +558,13 @@ export default function PatternGamePage() {
       </div>
 
       {flight && <FlightClone flight={flight} size={seqSize} />}
+      {isGardenOpen && (
+        <GardenView
+          items={garden.gardenItems}
+          bestStreak={garden.bestStreak}
+          onClose={() => setIsGardenOpen(false)}
+        />
+      )}
     </div>
   );
 }
