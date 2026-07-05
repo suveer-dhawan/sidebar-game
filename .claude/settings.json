@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(npx vitest *)",
+      "Bash(npx eslint *)",
+      "Bash(curl -s http://localhost:3000/dev/pattern)",
+      "Bash(npx --no-install playwright --version)",
+      "Bash(npx tsx *)",
+      "Bash(find /Users/suveerdhawan/.npm/_npx -maxdepth 3 -iname \"package.json\" 2>/dev/null | xargs grep -l '\"name\": \"playwright\"' 2>/dev/null | head -5)",
+      "Read(//Users/suveerdhawan/.npm/_npx/**)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(npx --no-install chromium-cli --version)",
+      "Bash(command -v chromium-cli)",
+      "Bash(find / -maxdepth 5 -iname \"chromium-cli*\")",
+      "Bash(find /Users/suveerdhawan/.npm/_npx -maxdepth 4 -iname \"playwright\" 2>/dev/null)"
+    ]
+  }
+}
