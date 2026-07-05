@@ -63,17 +63,17 @@ interface LedgeFlower {
 // glance, so it renders smaller than the real sequence plants, freeing
 // width for the cells that actually carry the pattern.
 function sequenceSizeFor(visibleCount: number): number {
-  if (visibleCount <= 3) return 116;
-  if (visibleCount === 4) return 96;
-  return 80;
+  if (visibleCount <= 3) return 132;
+  if (visibleCount === 4) return 108;
+  return 88;
 }
 
-// Each option sits inside a padded card in a 3-column grid, so the safe art
-// size is noticeably smaller than the raw column width (measured: ~103px
-// column on a 390px phone, minus the card's own padding).
+// Each option sits inside a padded card in a 3-column grid (measured: ~103px
+// column on a 390px phone). The flower should fill that column, not float in
+// a small box surrounded by card padding.
 function optionSizeFor(count: number): number {
-  if (count <= 3) return 84;
-  return 68;
+  if (count <= 3) return 128;
+  return 104;
 }
 
 // Deterministic jagged top edge for the grass-hint strip - not random per
@@ -577,7 +577,7 @@ export default function PatternGamePage() {
                     else optionRefs.current.delete(option.id);
                   }}
                   className={[
-                    "relative flex flex-col items-center justify-center gap-2 rounded-2xl p-3 transition-all duration-300 ease-out",
+                    "relative flex flex-col items-center justify-center gap-2 rounded-2xl p-2 transition-all duration-300 ease-out",
                     "ring-1 ring-[#EBD2AE]/70",
                     wobble ? "animate-seed-wobble" : "",
                     reveal ? "animate-reveal-pulse ring-2 ring-success/50" : "",
@@ -588,7 +588,7 @@ export default function PatternGamePage() {
                     .filter(Boolean)
                     .join(" ")}
                   style={{
-                    minHeight: optionSize + 100,
+                    minHeight: optionSize + 24,
                     background: "linear-gradient(180deg, #FFFFFF 0%, #FBEBD6 100%)",
                     boxShadow: "0 2px 6px rgba(120,80,40,0.10)",
                   }}

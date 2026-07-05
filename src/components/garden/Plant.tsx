@@ -88,9 +88,11 @@ export function Plant({
   return (
     <svg
       viewBox="0 0 100 100"
-      width={size}
-      height={size}
+      width="100%"
+      height="100%"
+      preserveAspectRatio="xMidYMid meet"
       className={className}
+      style={{ width: size, height: size }}
       role="img"
       aria-label={label}
     >
