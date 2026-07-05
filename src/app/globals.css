@@ -27,3 +27,79 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Springy bloom: a new plant landing in a plot overshoots slightly then settles. */
+@keyframes bloom-in-spring {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.14);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.animate-bloom-in {
+  animation: bloom-in-spring 700ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* A soft ring that beats outward once behind a freshly grown plant. */
+@keyframes gentle-beat {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+.animate-gentle-beat {
+  animation: gentle-beat 750ms ease-out both;
+}
+
+/* A seedling that "doesn't take": a small, soft wobble, not a harsh shake. */
+@keyframes seed-wobble {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateX(-3px) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateX(3px) rotate(1.5deg);
+  }
+  75% {
+    transform: translateX(-2px) rotate(-1deg);
+  }
+}
+.animate-seed-wobble {
+  animation: seed-wobble 380ms ease-in-out;
+}
+
+/* Reveals the correct seedling with the same spring quality as the bloom-in. */
+@keyframes reveal-pulse {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.12);
+  }
+  65% {
+    transform: scale(0.96);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-reveal-pulse {
+  animation: reveal-pulse 650ms cubic-bezier(0.34, 1.56, 0.64, 1) 120ms both;
+}

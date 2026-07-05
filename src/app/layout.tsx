@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Nunito } from "next/font/google";
 import "./globals.css";
 
@@ -21,6 +21,11 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Sidebar",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#FFF8F2",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
