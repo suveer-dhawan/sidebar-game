@@ -70,6 +70,24 @@ export const SOIL_PALETTE: BloomPalette = {
   deep: "#83603f",
 };
 
+// The bed's living groundcover - a real grass green (warmed slightly, never
+// neon) rather than the pale mint used for plant leaves, so beds read as an
+// actual garden floor underneath the blooms.
+export const GROUND_PALETTE: BloomPalette = {
+  light: lighten("#86ae64", 0.55),
+  base: "#86ae64",
+  dark: darken("#86ae64", 0.3),
+  deep: darken("#86ae64", 0.48),
+};
+
+// Warm stone for stepping paths and the birdbath basin.
+export const STONE_PALETTE: BloomPalette = {
+  light: "#f3ebdd",
+  base: "#d9cfc0",
+  dark: darken("#d9cfc0", 0.28),
+  deep: darken("#d9cfc0", 0.45),
+};
+
 // The resident cat: a warm, sun-faded ginger coat so she reads as part of
 // the garden's palette family rather than a distinct "character" sprite.
 export const CAT_PALETTE: BloomPalette = {

@@ -11,6 +11,14 @@ export interface PlantProps {
   growthStage?: GrowthStage;
   size?: number;
   className?: string;
+  /**
+   * Plants normally carry their own soil pot so they read fine on any
+   * background. Set false when the caller already provides ground (a garden
+   * bed's groundcover) - this also switches to a viewBox cropped tight around
+   * the bloom itself, so it fills its box instead of leaving the pot's empty
+   * headroom and soil band unused.
+   */
+  showSoil?: boolean;
 }
 
 function Soil({ uid }: { uid: string }) {
@@ -70,14 +78,20 @@ export function Plant({
   colour = "peach",
   count = 1,
   growthStage = "full-bloom",
-  size = 88,
+  size,
   className,
+  showSoil = true,
 }: PlantProps) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const petal = getBloomPalette(colour);
   const metrics = GROWTH_METRICS[growthStage];
   const anchors = BLOOM_ANCHORS[count];
   const Head = species ? BLOOM_HEADS[species] : null;
+  // Every layout (single stem up to a full 3-bloom cluster) sits within
+  // roughly x:[16,86] y:[25,80] of the 100x100 stage. Cropping to this box
+  // when the soil pot is hidden makes the bloom itself fill its box instead
+  // of floating in the pot's unused headroom/base.
+  const viewBox = showSoil ? "0 0 100 100" : "12 14 76 76";
 
   const stageLabel =
     growthStage === "full-bloom" ? "in full bloom" : growthStage === "half-open" ? "half open" : "a bud";
@@ -87,20 +101,22 @@ export function Plant({
 
   return (
     <svg
-      viewBox="0 0 100 100"
+      viewBox={viewBox}
       width="100%"
       height="100%"
       preserveAspectRatio="xMidYMid meet"
       className={className}
-      style={{ width: size, height: size }}
+      style={size === undefined ? undefined : { width: size, height: size }}
       role="img"
       aria-label={label}
     >
       <defs>
-        <radialGradient id={`${uid}-soil`} cx="40%" cy="30%" r="75%">
-          <stop offset="0%" stopColor={SOIL_PALETTE.light} />
-          <stop offset="100%" stopColor={SOIL_PALETTE.base} />
-        </radialGradient>
+        {showSoil && (
+          <radialGradient id={`${uid}-soil`} cx="40%" cy="30%" r="75%">
+            <stop offset="0%" stopColor={SOIL_PALETTE.light} />
+            <stop offset="100%" stopColor={SOIL_PALETTE.base} />
+          </radialGradient>
+        )}
         {species && (
           <>
             <linearGradient id={`${uid}-petal`} x1="0" y1="1" x2="0" y2="0">
@@ -125,7 +141,7 @@ export function Plant({
         )}
       </defs>
 
-      <Soil uid={uid} />
+      {showSoil && <Soil uid={uid} />}
 
       {species && Head ? (
         <g>
