@@ -61,11 +61,13 @@ interface LedgeFlower {
 
 // The empty plot is a "mystery" cell - it doesn't need to be read at a
 // glance, so it renders smaller than the real sequence plants, freeing
-// width for the cells that actually carry the pattern.
+// width for the cells that actually carry the pattern. Sizes are tuned to
+// the widest they can go without the row's flex-shrink kicking in and
+// squashing the flowers on a 390px phone (measured row budget: ~350px).
 function sequenceSizeFor(visibleCount: number): number {
-  if (visibleCount <= 3) return 132;
-  if (visibleCount === 4) return 108;
-  return 88;
+  if (visibleCount <= 3) return 96;
+  if (visibleCount === 4) return 74;
+  return 58;
 }
 
 // Each option sits inside a padded card in a 3-column grid (measured: ~103px
@@ -343,7 +345,7 @@ export default function PatternGamePage() {
 
   const visibleCount = puzzle ? puzzle.visible.length : 3;
   const seqSize = sequenceSizeFor(visibleCount);
-  const emptySize = Math.round(seqSize * 0.62);
+  const emptySize = Math.round(seqSize * 0.55);
   const plotSize = plotFilled ? seqSize : emptySize;
   const optionSize = optionSizeFor(puzzle?.options.length ?? 3);
   const correctCell = puzzle?.options.find((o) => o.isCorrect)?.cell ?? null;
