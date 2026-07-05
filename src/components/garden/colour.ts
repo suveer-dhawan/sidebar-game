@@ -69,3 +69,15 @@ export const SOIL_PALETTE: BloomPalette = {
   dark: "#a9805b",
   deep: "#83603f",
 };
+
+// The resident cat: a warm, sun-faded ginger coat so she reads as part of
+// the garden's palette family rather than a distinct "character" sprite.
+export const CAT_PALETTE: BloomPalette = {
+  light: lighten(COLOUR_HEX.peach, 0.6),
+  base: COLOUR_HEX.peach,
+  dark: darken(COLOUR_HEX.peach, 0.24),
+  deep: darken(COLOUR_HEX.peach, 0.42),
+};
+export const CAT_BELLY = lighten(COLOUR_HEX.peach, 0.82);
+export const CAT_EAR_INNER = "#E7B7A4";
+export const CAT_FEATURE = darken(SOIL_PALETTE.dark, 0.35);

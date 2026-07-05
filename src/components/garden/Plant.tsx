@@ -79,9 +79,11 @@ export function Plant({
   const anchors = BLOOM_ANCHORS[count];
   const Head = species ? BLOOM_HEADS[species] : null;
 
+  const stageLabel =
+    growthStage === "full-bloom" ? "in full bloom" : growthStage === "half-open" ? "half open" : "a bud";
   const label = species
-    ? `${count} ${growthStage.replace("-", " ")} ${colour} ${species} bloom${count > 1 ? "s" : ""}`
-    : "Empty planting spot";
+    ? `${count > 1 ? `${count} ` : ""}${colour} ${species}${count > 1 ? "s" : ""}, ${stageLabel}`
+    : "Empty planting spot, waiting for a seedling";
 
   return (
     <svg

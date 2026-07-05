@@ -1,8 +1,17 @@
 "use client";
 
 import { Plant } from "@/components/garden/Plant";
+import { Cat, type CatMood } from "@/components/garden/Cat";
 import { SOIL_PALETTE, darken, lighten } from "@/components/garden/colour";
 import type { GardenItem } from "@/lib/pattern-garden-storage";
+
+// The more the garden fills in, the more settled she gets - curious in a
+// young garden, properly curled up and content once it's really grown.
+function catMoodFor(itemCount: number): CatMood {
+  if (itemCount === 0) return "napping";
+  if (itemCount < 5) return "alert";
+  return "curled";
+}
 
 interface GardenViewProps {
   items: GardenItem[];
@@ -84,6 +93,7 @@ export function GardenView({ items, bestStreak, onClose }: GardenViewProps) {
         {items.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
             <Plant size={96} />
+            <Cat mood="napping" size={40} />
             <p className="max-w-[220px] text-sm text-text-light">
               Nothing&apos;s grown yet. Plant your first seedling and it&apos;ll take root here.
             </p>
@@ -104,6 +114,9 @@ export function GardenView({ items, bestStreak, onClose }: GardenViewProps) {
                 </div>
               );
             })}
+            <div className="flex flex-col items-center" style={{ transform: "translateY(6px)" }}>
+              <Cat mood={catMoodFor(items.length)} size={64} />
+            </div>
           </div>
         )}
       </div>

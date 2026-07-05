@@ -85,6 +85,22 @@ body {
   animation: seed-wobble 380ms ease-in-out;
 }
 
+/* A quiet, un-bouncy entrance for the "not this time" feedback pill - it
+   should feel settled and gentle, never as celebratory as a bloom-in. */
+@keyframes fade-settle-in {
+  0% {
+    transform: translateY(4px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.animate-fade-settle-in {
+  animation: fade-settle-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 /* Reveals the correct seedling with the same spring quality as the bloom-in. */
 @keyframes reveal-pulse {
   0% {
@@ -145,4 +161,86 @@ body {
 }
 .animate-plant-flight {
   animation: plant-flight var(--flight-ms, 560ms) cubic-bezier(0.34, 1.1, 0.64, 1) forwards;
+}
+
+/* The resident cat's idle breathing: a barely-there rise, never a bounce. */
+@keyframes cat-breathe {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.018);
+  }
+}
+.animate-cat-breathe {
+  animation: cat-breathe 3400ms ease-in-out infinite;
+}
+
+/* A slow, restful tail sway - not a wag, just a settled drift. */
+@keyframes cat-tail-sway {
+  0%,
+  100% {
+    transform: rotate(-2.5deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+.animate-cat-tail {
+  animation: cat-tail-sway 4600ms ease-in-out infinite;
+}
+
+/* An occasional, small ear twitch so she reads as alive, not a sticker. */
+@keyframes cat-ear-twitch {
+  0%,
+  88%,
+  100% {
+    transform: rotate(0deg);
+  }
+  91% {
+    transform: rotate(-9deg);
+  }
+  94% {
+    transform: rotate(3deg);
+  }
+}
+.animate-cat-ear-twitch {
+  animation: cat-ear-twitch 7000ms ease-in-out infinite;
+}
+
+/* A slow blink, mostly open - only reachable in her alert pose. */
+@keyframes cat-blink {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  95%,
+  97% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+.animate-cat-blink {
+  animation: cat-blink 5400ms ease-in-out infinite;
+}
+
+/* Mood changes (napping -> alert -> napping) pop in with a small settle,
+   matching the same spring quality as a bloom taking root - she reacts to
+   the garden, she doesn't announce it. */
+@keyframes cat-perk {
+  0% {
+    transform: scale(0.94) translateY(2px);
+  }
+  55% {
+    transform: scale(1.05) translateY(-2px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+.animate-cat-perk {
+  animation: cat-perk 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }

@@ -9,7 +9,7 @@ export default function Home() {
           <h1 className="text-4xl font-bold tracking-tight text-text">
             Sidebar
           </h1>
-          <p className="text-text-light">train your brain, no stress</p>
+          <p className="text-text-light">a cozy corner for quiet little games</p>
         </header>
 
         <div className="grid grid-cols-2 gap-4">

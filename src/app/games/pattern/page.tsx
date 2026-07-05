@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import { Fraunces } from "next/font/google";
 import { BackButton } from "@/components/layout/BackButton";
 import { Plant } from "@/components/garden/Plant";
+import { Cat, type CatMood } from "@/components/garden/Cat";
 import { GardenView } from "@/components/garden/GardenView";
 import { SOIL_PALETTE, darken, lighten } from "@/components/garden/colour";
 import { generatePuzzle, type Cell, type Puzzle, type PuzzleOption, type Tier } from "@/lib/pattern-engine";
@@ -29,6 +30,17 @@ const FLIGHT_MS = 560;
 const HOLD_CORRECT_MS = 850;
 const HOLD_WRONG_MS = 1500;
 const LEAVE_MS = 280;
+
+// How long the resident cat stays perked up after a bloom lands before she
+// settles back into her nap. She only ever reacts to something taking root -
+// never to a wrong answer - so this timer is only ever started on success.
+const CAT_ALERT_MS = 2600;
+
+// No visible timer, ever - just a slow ambient warmth that settles in once
+// she's been sitting with a puzzle a while. Fires well before the ~60-70s
+// pacing target so it reads as the garden's light drifting, not a deadline.
+const AMBIENT_CUE_DELAY_MS = 45_000;
+const AMBIENT_CUE_FADE_MS = 9_000;
 
 type Phase = "choosing" | "flying" | "correct" | "wrong" | "leaving";
 
@@ -167,6 +179,32 @@ function Petals({ petalKey }: { petalKey: string }) {
   );
 }
 
+// No visible timer, ever - remounted fresh for every puzzle (via `key`), so
+// it always starts cool and only drifts warmer if she's still sitting with
+// the same puzzle once the delay elapses. Purely ambient: a slow fade she'd
+// only notice in hindsight, never a cue that demands a response.
+function AmbientWarmth() {
+  const [warm, setWarm] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setWarm(true), AMBIENT_CUE_DELAY_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 z-0"
+      style={{
+        background:
+          "linear-gradient(180deg, rgba(247,190,120,0) 0%, rgba(240,150,90,0.14) 55%, rgba(226,110,64,0.22) 100%)",
+        opacity: warm ? 1 : 0,
+        transition: `opacity ${AMBIENT_CUE_FADE_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`,
+      }}
+      aria-hidden="true"
+    />
+  );
+}
+
 function FlightClone({ flight, size }: { flight: FlightState; size: number }) {
   return (
     <div
@@ -204,6 +242,7 @@ export default function PatternGamePage() {
   const [flight, setFlight] = useState<FlightState | null>(null);
   const [garden, setGarden] = useState<PatternGardenState>(DEFAULT_PATTERN_GARDEN_STATE);
   const [isGardenOpen, setIsGardenOpen] = useState(false);
+  const [catMood, setCatMood] = useState<CatMood>("napping");
 
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const optionRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -290,6 +329,8 @@ export default function PatternGamePage() {
         setLastOutcome("correct");
         setLedge((prev) => [...prev, { key: `${puzzle.id}-${option.id}`, cell: option.cell }]);
         persistGarden(recordCorrectAnswer(gardenRef.current, option.cell));
+        setCatMood("alert");
+        schedule(() => setCatMood("napping"), CAT_ALERT_MS);
         schedule(startLeaving, HOLD_CORRECT_MS);
       }, FLIGHT_MS);
     } else {
@@ -338,6 +379,7 @@ export default function PatternGamePage() {
         }}
         aria-hidden="true"
       />
+      {puzzle && <AmbientWarmth key={puzzle.id} />}
 
       <div
         className={`relative z-10 flex min-h-dvh flex-1 flex-col transition-all duration-300 ease-out ${
@@ -433,6 +475,12 @@ export default function PatternGamePage() {
             aria-hidden="true"
           />
           <GrassWisps />
+          <div
+            className="pointer-events-none absolute right-4 z-10"
+            style={{ bottom: "calc(15dvh - 4px)" }}
+          >
+            <Cat mood={catMood} size={42} />
+          </div>
 
           <div
             className="relative z-10 mx-auto flex w-full max-w-md items-end justify-center gap-1"
@@ -479,14 +527,16 @@ export default function PatternGamePage() {
         <div className="flex shrink-0 items-center justify-center px-4" style={{ minHeight: 44 }}>
           {lastOutcome && (
             <p
-              className="animate-bloom-in rounded-full px-4 py-1.5 text-center text-sm font-semibold"
+              className={`rounded-full px-4 py-1.5 text-center text-sm font-semibold ${
+                lastOutcome === "correct" ? "animate-bloom-in" : "animate-fade-settle-in"
+              }`}
               style={{
                 background: lastOutcome === "correct" ? successPill.bg : wrongPill.bg,
                 color: lastOutcome === "correct" ? successPill.text : wrongPill.text,
               }}
               aria-live="polite"
             >
-              {lastOutcome === "correct" ? "lovely - it took root" : "not quite - here's the one that fits"}
+              {lastOutcome === "correct" ? "lovely - it took root" : "not this time - here's the one that fits"}
             </p>
           )}
         </div>
