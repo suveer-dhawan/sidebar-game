@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
 import { Fraunces } from "next/font/google";
 import { BackButton } from "@/components/layout/BackButton";
 import { Plant } from "@/components/garden/Plant";
-import { SOIL_PALETTE } from "@/components/garden/colour";
+import { SOIL_PALETTE, darken, lighten } from "@/components/garden/colour";
 import { generatePuzzle, type Cell, type Puzzle, type PuzzleOption, type Tier } from "@/lib/pattern-engine";
 
 const fraunces = Fraunces({
@@ -37,10 +37,21 @@ interface LedgeFlower {
   cell: Cell;
 }
 
-function plantSizeFor(totalSlots: number): number {
-  if (totalSlots <= 4) return 88;
-  if (totalSlots === 5) return 74;
-  return 60;
+// The empty plot is a "mystery" cell - it doesn't need to be read at a
+// glance, so it renders smaller than the real sequence plants, freeing
+// width for the cells that actually carry the pattern.
+function sequenceSizeFor(visibleCount: number): number {
+  if (visibleCount <= 3) return 116;
+  if (visibleCount === 4) return 96;
+  return 80;
+}
+
+// Each option sits inside a padded card in a 3-column grid, so the safe art
+// size is noticeably smaller than the raw column width (measured: ~103px
+// column on a 390px phone, minus the card's own padding).
+function optionSizeFor(count: number): number {
+  if (count <= 3) return 84;
+  return 68;
 }
 
 // Deterministic jagged top edge for the grass-hint strip - not random per
@@ -56,6 +67,51 @@ function grassPath(width = 240, height = 18, blades = 34): string {
   return d;
 }
 const GRASS_PATH = grassPath();
+
+// A few soft, static blades rising from the planter rim, scattered behind the
+// sequence row - fills the open air above the planter with garden texture
+// instead of bare cream, without competing with the flowers for attention.
+const WISP_SPECS = [
+  { x: 6, h: 46, w: 5, lean: -4, o: 0.22 },
+  { x: 20, h: 30, w: 4, lean: 5, o: 0.16 },
+  { x: 60, h: 52, w: 5, lean: 3, o: 0.2 },
+  { x: 82, h: 34, w: 4, lean: -5, o: 0.15 },
+  { x: 94, h: 44, w: 5, lean: 4, o: 0.2 },
+];
+
+function GrassWisps() {
+  return (
+    <svg
+      className="pointer-events-none absolute inset-x-3 z-0"
+      style={{ bottom: "15dvh", height: 60 }}
+      viewBox="0 0 100 60"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      {WISP_SPECS.map((w, i) => (
+        <path
+          key={i}
+          d={`M${w.x - w.w / 2},60 Q${w.x + w.lean},${60 - w.h * 0.6} ${w.x + w.lean},${60 - w.h} Q${w.x + w.lean * 1.4},${60 - w.h * 0.6} ${w.x + w.w / 2},60 Z`}
+          fill="var(--color-secondary)"
+          opacity={w.o}
+        />
+      ))}
+    </svg>
+  );
+}
+
+// The engine is untouched - this just retries a few times, client-side, for
+// the puzzle with the fewest cells (prefers 4 slots over 5+) so each plant
+// gets more width on screen.
+function generateCompactPuzzle(tier: Tier): Puzzle {
+  let best: Puzzle | null = null;
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const candidate = generatePuzzle(tier);
+    if (candidate.visible.length + 1 <= 4) return candidate;
+    if (!best || candidate.visible.length < best.visible.length) best = candidate;
+  }
+  return best as Puzzle;
+}
 
 function GrassEdge() {
   return (
@@ -158,7 +214,7 @@ export default function PatternGamePage() {
   // state sync, so it intentionally runs once.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPuzzle(generatePuzzle(TIER));
+    setPuzzle(generateCompactPuzzle(TIER));
   }, []);
 
   useEffect(() => {
@@ -167,7 +223,7 @@ export default function PatternGamePage() {
   }, [ledge.length]);
 
   function loadNext() {
-    setPuzzle(generatePuzzle(TIER));
+    setPuzzle(generateCompactPuzzle(TIER));
     setSelectedId(null);
     setPlotFilled(false);
     setLastOutcome(null);
@@ -216,19 +272,31 @@ export default function PatternGamePage() {
     }
   }
 
-  const totalSlots = puzzle ? puzzle.visible.length + 1 : 4;
-  const rowSize = plantSizeFor(totalSlots);
+  const visibleCount = puzzle ? puzzle.visible.length : 3;
+  const seqSize = sequenceSizeFor(visibleCount);
+  const emptySize = Math.round(seqSize * 0.62);
+  const plotSize = plotFilled ? seqSize : emptySize;
+  const optionSize = optionSizeFor(puzzle?.options.length ?? 3);
   const correctCell = puzzle?.options.find((o) => o.isCorrect)?.cell ?? null;
 
   const sceneGradient = useMemo(
     () =>
-      `linear-gradient(180deg, #FFFCF7 0%, #FFF6E9 20%, #FDE9D0 34%, ${SOIL_PALETTE.light} 47%, ${SOIL_PALETTE.base} 74%, ${SOIL_PALETTE.dark} 100%)`,
+      `linear-gradient(180deg, #FFFCF7 0%, #FFF6E9 22%, #FDE9D0 42%, #FBDFC0 62%, #F7D3AC 100%)`,
+    [],
+  );
+
+  const successPill = useMemo(
+    () => ({ bg: lighten("#81C784", 0.78), text: darken("#3F8E45", 0.05) }),
+    [],
+  );
+  const wrongPill = useMemo(
+    () => ({ bg: lighten(SOIL_PALETTE.base, 0.72), text: darken(SOIL_PALETTE.dark, 0.15) }),
     [],
   );
 
   return (
     <div
-      className={`${fraunces.variable} relative flex min-h-full flex-1 flex-col overflow-hidden`}
+      className={`${fraunces.variable} relative flex min-h-dvh flex-1 flex-col overflow-hidden`}
       style={{ background: sceneGradient }}
     >
       <div
@@ -244,75 +312,80 @@ export default function PatternGamePage() {
       />
 
       <div
-        className={`relative z-10 flex min-h-full flex-1 flex-col transition-all duration-300 ease-out ${
+        className={`relative z-10 flex min-h-dvh flex-1 flex-col transition-all duration-300 ease-out ${
           phase === "leaving" ? "scale-[0.97] opacity-0" : "scale-100 opacity-100"
         }`}
         style={{
-          paddingTop: "max(0.9rem, env(safe-area-inset-top))",
           paddingLeft: "max(1rem, env(safe-area-inset-left))",
           paddingRight: "max(1rem, env(safe-area-inset-right))",
         }}
       >
-        <header className="flex w-full items-center justify-between">
-          <BackButton />
-          <h1
-            className="text-sm text-text/70"
-            style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 600 }}
-          >
-            Pattern Garden
-          </h1>
-        </header>
-
+        {/* Top zone: back button, title, session ledge - ~15% of the screen */}
         <div
-          ref={ledgeScrollRef}
-          className="mt-3 flex w-full items-center gap-1 overflow-x-auto rounded-full px-3 py-1.5"
-          style={{
-            background: "linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.25) 100%)",
-            boxShadow: "inset 0 1px 2px rgba(169,128,91,0.18)",
-          }}
+          className="shrink-0"
+          style={{ paddingTop: "max(0.9rem, env(safe-area-inset-top))" }}
         >
-          {ledge.length === 0 ? (
-            <span className="whitespace-nowrap px-1 text-xs text-text-light/80">
-              your garden grows here
-            </span>
-          ) : (
-            ledge.map((f, i) => (
-              <span key={f.key} className={i === ledge.length - 1 ? "animate-bloom-in shrink-0" : "shrink-0"}>
-                <Plant
-                  species={f.cell.species}
-                  colour={f.cell.colour}
-                  count={f.cell.count}
-                  growthStage={f.cell.growthStage}
-                  size={30}
-                />
+          <header className="flex w-full items-center justify-between">
+            <BackButton />
+            <h1
+              className="text-sm text-text/70"
+              style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 600 }}
+            >
+              Pattern Garden
+            </h1>
+          </header>
+
+          <div
+            ref={ledgeScrollRef}
+            className="mt-3 flex w-full items-center gap-1 overflow-x-auto rounded-full px-3 py-1.5"
+            style={{
+              background: "linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.25) 100%)",
+              boxShadow: "inset 0 1px 2px rgba(169,128,91,0.18)",
+            }}
+          >
+            {ledge.length === 0 ? (
+              <span className="whitespace-nowrap px-1 text-xs text-text-light/80">
+                your garden grows here
               </span>
-            ))
-          )}
+            ) : (
+              ledge.map((f, i) => (
+                <span key={f.key} className={i === ledge.length - 1 ? "animate-bloom-in shrink-0" : "shrink-0"}>
+                  <Plant
+                    species={f.cell.species}
+                    colour={f.cell.colour}
+                    count={f.cell.count}
+                    growthStage={f.cell.growthStage}
+                    size={30}
+                  />
+                </span>
+              ))
+            )}
+          </div>
         </div>
 
-        <main className="relative mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-3 px-1">
-          <svg
-            className="pointer-events-none absolute inset-0 -z-10 h-full w-full"
-            viewBox="0 0 400 100"
-            preserveAspectRatio="none"
+        {/* Middle zone: the sequence in its shallow planter - the big, legible hero */}
+        <div className="relative flex min-h-0 flex-col justify-end" style={{ flexGrow: 1, flexBasis: 0 }}>
+          <div
+            className="absolute inset-x-3 bottom-0 rounded-t-[26px]"
+            style={{
+              height: "15dvh",
+              minHeight: 72,
+              background: `linear-gradient(180deg, ${SOIL_PALETTE.light} 0%, ${SOIL_PALETTE.base} 45%, ${SOIL_PALETTE.dark} 100%)`,
+              boxShadow: `inset 0 2px 0 rgba(255,255,255,0.35), inset 0 -10px 18px ${SOIL_PALETTE.deep}55`,
+            }}
             aria-hidden="true"
-          >
-            <defs>
-              <linearGradient id="hill-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={SOIL_PALETTE.base} />
-                <stop offset="55%" stopColor={SOIL_PALETTE.dark} />
-                <stop offset="100%" stopColor={SOIL_PALETTE.deep} />
-              </linearGradient>
-            </defs>
-            <path d="M0,100 L0,54 Q200,40 400,54 L400,100 Z" fill="url(#hill-fill)" />
-          </svg>
+          />
+          <div
+            className="absolute inset-x-3 z-0 rounded-t-[26px]"
+            style={{ bottom: "15dvh", height: 10, background: SOIL_PALETTE.deep, opacity: 0.18 }}
+            aria-hidden="true"
+          />
+          <GrassWisps />
 
-          <div className="relative flex w-full items-end justify-center gap-1.5 py-4">
-            <div
-              className="pointer-events-none absolute inset-x-2 inset-y-3 -z-10 rounded-[50%] blur-2xl"
-              style={{ background: `radial-gradient(ellipse at center, ${SOIL_PALETTE.dark}4d, transparent 72%)` }}
-              aria-hidden="true"
-            />
+          <div
+            className="relative z-10 mx-auto flex w-full max-w-md items-end justify-center gap-1"
+            style={{ marginBottom: "6dvh" }}
+          >
             {puzzle
               ? puzzle.visible.map((cell, i) => (
                   <Plant
@@ -321,15 +394,15 @@ export default function PatternGamePage() {
                     colour={cell.colour}
                     count={cell.count}
                     growthStage={cell.growthStage}
-                    size={rowSize}
+                    size={seqSize}
                   />
                 ))
-              : Array.from({ length: 3 }).map((_, i) => <Plant key={i} size={rowSize} />)}
+              : Array.from({ length: 3 }).map((_, i) => <Plant key={i} size={seqSize} />)}
 
             <div
               ref={plotRef}
               key={plotFilled ? `plot-filled-${puzzle?.id}` : `plot-empty-${puzzle?.id}`}
-              className={`relative flex items-center justify-center ${plotFilled ? "animate-bloom-in" : ""}`}
+              className={`relative flex items-end justify-center ${plotFilled ? "animate-bloom-in" : ""}`}
             >
               {plotFilled && (
                 <>
@@ -344,25 +417,30 @@ export default function PatternGamePage() {
                 colour={plotFilled && correctCell ? correctCell.colour : undefined}
                 count={plotFilled && correctCell ? correctCell.count : undefined}
                 growthStage={plotFilled && correctCell ? correctCell.growthStage : undefined}
-                size={rowSize}
+                size={plotSize}
               />
             </div>
           </div>
+        </div>
 
-          <p
-            className="h-5 text-center text-sm text-text-light transition-opacity duration-300"
-            style={{ opacity: lastOutcome ? 1 : 0 }}
-            aria-live="polite"
-          >
-            {lastOutcome === "correct"
-              ? "lovely - it took root."
-              : lastOutcome === "wrong"
-                ? "not quite - here's the one that fits."
-                : ""}
-          </p>
-        </main>
+        {/* Slim feedback band, always reserved so nothing shifts when it appears */}
+        <div className="flex shrink-0 items-center justify-center px-4" style={{ minHeight: 44 }}>
+          {lastOutcome && (
+            <p
+              className="animate-bloom-in rounded-full px-4 py-1.5 text-center text-sm font-semibold"
+              style={{
+                background: lastOutcome === "correct" ? successPill.bg : wrongPill.bg,
+                color: lastOutcome === "correct" ? successPill.text : wrongPill.text,
+              }}
+              aria-live="polite"
+            >
+              {lastOutcome === "correct" ? "lovely - it took root" : "not quite - here's the one that fits"}
+            </p>
+          )}
+        </div>
 
-        <div className="relative mt-auto">
+        {/* Bottom zone: seedling choices, thumb-friendly - ~30% of the screen */}
+        <div className="relative flex min-h-0 flex-col justify-center" style={{ flexGrow: 1.6, flexBasis: 0 }}>
           <GrassEdge />
           <div
             className="absolute inset-x-0 bottom-0 top-3 rounded-t-[28px]"
@@ -373,8 +451,8 @@ export default function PatternGamePage() {
             aria-hidden="true"
           />
           <div
-            className="relative grid w-full grid-cols-3 gap-3 px-2 pt-5"
-            style={{ paddingBottom: "max(1.1rem, env(safe-area-inset-bottom))" }}
+            className="relative mx-auto grid w-full max-w-md grid-cols-3 gap-3 px-3 py-6"
+            style={{ paddingBottom: "max(1.6rem, env(safe-area-inset-bottom))" }}
           >
             {(puzzle?.options ?? []).map((option) => {
               const isSelected = option.id === selectedId;
@@ -397,7 +475,7 @@ export default function PatternGamePage() {
                     else optionRefs.current.delete(option.id);
                   }}
                   className={[
-                    "relative flex flex-col items-center justify-center gap-1 rounded-2xl p-2 transition-all duration-300 ease-out",
+                    "relative flex flex-col items-center justify-center gap-2 rounded-2xl p-3 transition-all duration-300 ease-out",
                     "ring-1 ring-[#EBD2AE]/70",
                     wobble ? "animate-seed-wobble" : "",
                     reveal ? "animate-reveal-pulse ring-2 ring-success/50" : "",
@@ -408,7 +486,7 @@ export default function PatternGamePage() {
                     .filter(Boolean)
                     .join(" ")}
                   style={{
-                    minHeight: rowSize + 32,
+                    minHeight: optionSize + 100,
                     background: "linear-gradient(180deg, #FFFFFF 0%, #FBEBD6 100%)",
                     boxShadow: "0 2px 6px rgba(120,80,40,0.10)",
                   }}
@@ -418,7 +496,7 @@ export default function PatternGamePage() {
                     colour={option.cell.colour}
                     count={option.cell.count}
                     growthStage={option.cell.growthStage}
-                    size={rowSize}
+                    size={optionSize}
                   />
                 </button>
               );
@@ -427,7 +505,7 @@ export default function PatternGamePage() {
         </div>
       </div>
 
-      {flight && <FlightClone flight={flight} size={rowSize} />}
+      {flight && <FlightClone flight={flight} size={seqSize} />}
     </div>
   );
 }

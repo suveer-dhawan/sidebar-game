@@ -38,7 +38,7 @@ export default function RootLayout({
       lang="en"
       className={`${nunito.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-bg text-text">
+      <body className="min-h-dvh flex flex-col bg-bg text-text">
         {children}
       </body>
     </html>
