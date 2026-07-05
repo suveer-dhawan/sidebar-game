@@ -103,3 +103,46 @@ body {
 .animate-reveal-pulse {
   animation: reveal-pulse 650ms cubic-bezier(0.34, 1.56, 0.64, 1) 120ms both;
 }
+
+/* Faint paper-grain texture, layered under the scene at very low opacity. */
+.bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
+/* A few petals drifting up and away from a freshly bloomed plant. */
+@keyframes petal-drift {
+  0% {
+    transform: translate(0, 0) scale(0.5) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(var(--petal-x, 10px), var(--petal-y, -34px)) scale(1) rotate(var(--petal-r, 45deg));
+    opacity: 0;
+  }
+}
+.animate-petal-drift {
+  animation: petal-drift 900ms ease-out both;
+}
+
+/* The chosen seedling lifting out of its tray and arcing into the empty plot. */
+@keyframes plant-flight {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  40% {
+    transform: translate3d(calc(var(--dx) * 0.45), calc(var(--dy) * 0.55 - 52px), 0) scale(1.12) rotate(-6deg);
+  }
+  75% {
+    transform: translate3d(calc(var(--dx) * 0.94), calc(var(--dy) * 0.94 - 8px), 0) scale(1.16) rotate(4deg);
+  }
+  100% {
+    transform: translate3d(var(--dx), var(--dy), 0) scale(1) rotate(0deg);
+  }
+}
+.animate-plant-flight {
+  animation: plant-flight var(--flight-ms, 560ms) cubic-bezier(0.34, 1.1, 0.64, 1) forwards;
+}
